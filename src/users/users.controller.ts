@@ -1,9 +1,22 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { Auth } from 'src/auth/decorators/auth.decorators';
+import { Role } from 'src/auth/enums/role.enum';
+import { ActiveUser } from 'src/common/active-user/active-user.decorator';
+import type { ActiveUserInterface } from 'src/common/interfaces/active-user.interface';
 
 @Controller('users')
+@Auth(Role.ADMIN)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
@@ -13,7 +26,10 @@ export class UsersController {
   }
 
   @Get()
-  findAll() {
+  findAll(
+    @ActiveUser()
+    user: ActiveUserInterface,
+  ) {
     return this.usersService.findAll();
   }
 

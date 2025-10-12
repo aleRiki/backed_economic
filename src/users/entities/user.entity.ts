@@ -1,4 +1,5 @@
 import { Account } from 'src/accounts/entities/account.entity';
+import { Role } from 'src/auth/enums/role.enum';
 import {
   Column,
   DeleteDateColumn,
@@ -15,8 +16,10 @@ export class User {
   name: string;
   @Column()
   email: string;
-  @Column()
+  @Column({ nullable: false, select: false })
   password: string;
+  @Column({ type: 'enum', enum: Role, default: Role.USER })
+  role: Role;
   @OneToMany(() => Account, (account) => account.user)
   accounts: Account[];
   @DeleteDateColumn()
