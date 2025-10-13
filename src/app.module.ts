@@ -5,22 +5,26 @@ import { BankModule } from './bank/bank.module';
 import { CardModule } from './card/card.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
-
+import { ConfigModule } from '@nestjs/config';
 @Module({
   imports: [
     UsersModule,
     AccountsModule,
     BankModule,
     CardModule,
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'user',
-      password: 'password',
-      database: 'mydatabase',
+       type: 'postgres',
+      host: process.env.POSTGRES_HOST,
+      port: parseInt(process.env.POSTGRES_PORT || '5432', 10),
+      username: process.env.POSTGRES_USER,
+      password: process.env.POSTGRES_PASSWORD,
+      database: process.env.POSTGRES_DB,
       autoLoadEntities: true,
-      synchronize: true,
+      synchronize: process.env.POSTGRES_SYNCHRONIZE === 'true',
+      ssl: process.env.POSTGRES_SSL === 'true',
     }),
     AuthModule,
   ],
