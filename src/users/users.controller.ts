@@ -16,7 +16,6 @@ import { ActiveUser } from 'src/common/active-user/active-user.decorator';
 import type { ActiveUserInterface } from 'src/common/interfaces/active-user.interface';
 
 @Controller('users')
-@Auth(Role.ADMIN)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 

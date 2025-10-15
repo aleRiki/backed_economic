@@ -7,8 +7,9 @@ export class CreateAccountDto {
     type: string
     @IsNumber()
     balance: number
-    @IsString()
-    User: string
-    @IsString()
-    Bank: string
+    @IsNumber()
+    userId: number; 
+    
+    @IsNumber()
+    bankId: number;
 }

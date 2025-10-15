@@ -11,7 +11,7 @@ export class Account {
     name: string;
     @Column()
     type: string
-    @Column()
+    @Column({ type: 'decimal', precision: 10, scale: 2 })
     balance: number;
     @ManyToOne(() => User, (user) => user.accounts)
     user: User;

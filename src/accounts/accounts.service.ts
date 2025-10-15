@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateAccountDto } from './dto/create-account.dto';
 import { UpdateAccountDto } from './dto/update-account.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -15,19 +15,33 @@ export class AccountsService {
     @InjectRepository(Bank) private bankRepository: Repository<Bank>,
   ) {}
   async create(createAccountDto: CreateAccountDto) {
+    // 1. Buscar por ID
     const bank = await this.bankRepository.findOneBy({
-      name: createAccountDto.Bank,
+      id: createAccountDto.bankId, // Usar bankId
     });
     const user = await this.usersRepository.findOneBy({
-      name: createAccountDto.User,
+      id: createAccountDto.userId, // Usar userId
     });
 
-    if (!bank || !user) {
-      throw new Error('Bank or User not found');
+    // 2. Manejo de Errores (usando NotFoundException como se sugirió)
+    if (!bank) {
+      throw new NotFoundException(
+        `Bank with ID '${createAccountDto.bankId}' not found.`,
+      );
+    }
+    if (!user) {
+      throw new NotFoundException(
+        `User with ID '${createAccountDto.userId}' not found.`,
+      );
     }
 
+    
     const account = this.accountsRepository.create({
-      ...createAccountDto,
+      
+      name: createAccountDto.name,
+      type: createAccountDto.type,
+      balance: createAccountDto.balance,
+    
       bank: bank,
       user: user,
     });
