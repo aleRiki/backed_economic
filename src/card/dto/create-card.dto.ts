@@ -1,11 +1,12 @@
-import { IsString, IsNotEmpty } from 'class-validator';
+import { IsString, IsNotEmpty, IsPositive, IsNumber } from 'class-validator';
 
 export class CreateCardDto {
   @IsString()
   @IsNotEmpty()
   number: string;
 
-  @IsString()
+  @IsNumber({}, { message: 'Account ID must be a number' })
+  @IsPositive()
   @IsNotEmpty()
-  account: string;
+  account: number;
 }

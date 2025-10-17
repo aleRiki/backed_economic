@@ -1,9 +1,11 @@
 import { Account } from 'src/accounts/entities/account.entity';
+import { Transaction } from 'src/transaction/entities/transaction.entity';
 import {
   Column,
   DeleteDateColumn,
   Entity,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
@@ -17,4 +19,8 @@ export class Card {
   account: Account;
   @DeleteDateColumn()
   deletedAt: Date;
+   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  balance: number; 
+  @OneToMany(() => Transaction, (transaction) => transaction.card)
+  transactions: Transaction[];
 }

@@ -6,6 +6,7 @@ import { CardModule } from './card/card.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
+import { TransactionModule } from './transaction/transaction.module';
 @Module({
   imports: [
     UsersModule,
@@ -27,6 +28,7 @@ import { ConfigModule } from '@nestjs/config';
       ssl: process.env.POSTGRES_SSL === 'true',
     }),
     AuthModule,
+    TransactionModule,
   ],
   controllers: [],
   providers: [],

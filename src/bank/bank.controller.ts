@@ -6,7 +6,10 @@ import { UpdateBankDto } from './dto/update-bank.dto';
 @Controller('bank')
 export class BankController {
   constructor(private readonly bankService: BankService) {}
-
+  @Get('rates')
+  async getExchangeRates() {
+    return this.bankService.getExchangeRates();
+  }
   @Post()
   create(@Body() createBankDto: CreateBankDto) {
     return this.bankService.create(createBankDto);
@@ -31,4 +34,5 @@ export class BankController {
   remove(@Param('id') id: string) {
     return this.bankService.remove(+id);
   }
+
 }

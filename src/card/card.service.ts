@@ -1,10 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { CreateCardDto } from './dto/create-card.dto';
 import { UpdateCardDto } from './dto/update-card.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Card } from './entities/card.entity';
-import { Account } from 'src/accounts/entities/account.entity';
+import { Account } from 'src/accounts/entities/account.entity'; // Asumo la ruta es correcta
 
 @Injectable()
 export class CardService {
@@ -12,66 +12,78 @@ export class CardService {
     @InjectRepository(Card) private cardRepository: Repository<Card>,
     @InjectRepository(Account) private accountRepository: Repository<Account>,
   ) {}
-  async create(createCardDto: CreateCardDto) {
-    const account = await this.accountRepository.findOneBy({
-      name: createCardDto.account,
-    });
 
-    if (!account) {
-      throw new Error('Account not found');
+async create(createCardDto: CreateCardDto) {
+  const accountId = createCardDto.account;
+
+  const account = await this.accountRepository.findOneBy({ id: accountId });
+
+  if (!account) {
+    throw new NotFoundException(`Account with ID ${accountId} not found.`);
+  }
+
+  const card = this.cardRepository.create({
+    number: createCardDto.number,
+    account,
+    balance: Number(account.balance), // 👈 asignamos balance inicial
+  });
+
+  return await this.cardRepository.save(card);
+}
+
+  // Las funciones findAll y findOne deben devolver tarjetas, no cuentas.
+  
+  findAll() {
+    // Retorna todas las tarjetas, con la relación 'account' cargada
+    return this.cardRepository.find({ relations: ['account'] });
+  }
+
+  findOne(id: number) {
+    // Retorna una tarjeta específica por ID, cargando la relación 'account'
+    return this.cardRepository.findOne({ 
+      where: { id },
+      relations: ['account']
+    });
+  }
+
+  async update(id: number, updateCardDto: UpdateCardDto) {
+    const card = await this.cardRepository.findOneBy({ id });
+    if (!card) {
+      throw new NotFoundException(`Card with ID ${id} not found.`);
     }
 
-    const card = this.cardRepository.create({
-      ...createCardDto,
-      account,
+    let account: Account | undefined = undefined;
+    
+    // Si el DTO incluye una cuenta nueva
+    if (updateCardDto.account !== undefined && updateCardDto.account !== null) {
+      // CORRECCIÓN CLAVE: updateCardDto.account ya es un número.
+      const accountId = updateCardDto.account;
+      
+      const foundAccount = await this.accountRepository.findOneBy({
+        id: accountId, 
+      });
+
+      if (!foundAccount) {
+        throw new NotFoundException(`Account with ID ${accountId} not found.`);
+      }
+      account = foundAccount;
+    }
+
+    // Usar .merge() para fusionar las propiedades
+    this.cardRepository.merge(card, {
+      number: updateCardDto.number, // Asignar el número si está presente
+      account: account, // Asignar la cuenta solo si se encontró una nueva
     });
+
 
     return await this.cardRepository.save(card);
   }
 
-  findAll() {
-    return this.accountRepository.find();
-  }
-
-  findOne(id: number) {
-    return this.accountRepository.findOneBy({ id });
-  }
-
- async update(id: number, updateCardDto: UpdateCardDto) {
-  // Buscar la tarjeta por ID
-  const card = await this.cardRepository.findOneBy({ id });
-  if (!card) {
-    throw new Error('Card not found');
-  }
-
-  // Inicializar la cuenta con la actual
-  let account = card.account;
-
-  // Si el DTO incluye una cuenta nueva, buscarla
-  if (updateCardDto.account) {
-    const foundAccount = await this.accountRepository.findOneBy({
-      name: updateCardDto.account,
-    });
-
-    if (!foundAccount) {
-      throw new Error('Account not found');
+  async remove(id: number) {
+    const result = await this.cardRepository.softDelete(id); // Usa softDelete por el DeleteDateColumn
+    if (result.affected === 0) {
+        throw new NotFoundException(`Card with ID ${id} not found.`);
     }
-
-    account = foundAccount;
-  }
-
-  // Crear una instancia actualizada de la tarjeta
-  const updatedCard = this.cardRepository.create({
-    ...card,
-    ...updateCardDto,
-    account,
-  });
-
-  // Guardar los cambios
-  return await this.cardRepository.save(updatedCard);
-}
-
-  remove(id: number) {
-    return `This action removes a #${id} card`;
+    return { message: `Card with ID ${id} softly removed.` };
   }
 }
