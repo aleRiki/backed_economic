@@ -7,6 +7,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { TransactionModule } from './transaction/transaction.module';
+import { TascambModule } from './tascamb/tascamb.module';
 @Module({
   imports: [
     UsersModule,
@@ -29,6 +30,7 @@ import { TransactionModule } from './transaction/transaction.module';
     }),
     AuthModule,
     TransactionModule,
+    TascambModule,
   ],
   controllers: [],
   providers: [],
