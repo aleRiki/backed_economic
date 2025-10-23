@@ -9,6 +9,8 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
   CreateDateColumn,
+  ManyToMany,
+  JoinTable,
 } from 'typeorm';
 
 @Entity()
@@ -21,8 +23,17 @@ export class Account {
   type: string;
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   balance: number;
-  @ManyToOne(() => User, (user) => user.accounts)
-  user: User;
+  // Tipo de cuenta: personal o familiar
+  @Column({ type: 'enum', enum: ['personal', 'familiar'], default: 'personal' })
+  typeAccount: 'personal' | 'familiar';
+
+  // Relación con usuario (personal: ManyToOne, familiar: ManyToMany)
+  @ManyToOne(() => User, (user) => user.ownedAccounts, { nullable: true })
+  owner?: User;
+
+  @ManyToMany(() => User, (user) => user.sharedAccounts, { nullable: true })
+  @JoinTable()
+  users?: User[];
   @ManyToOne(() => Bank, (bank) => bank.accounts)
   bank: Bank;
   @OneToMany(() => Card, (card) => card.account)

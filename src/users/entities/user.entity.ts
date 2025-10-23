@@ -4,6 +4,7 @@ import {
   Column,
   DeleteDateColumn,
   Entity,
+  ManyToMany,
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
@@ -20,8 +21,11 @@ export class User {
   password: string;
   @Column({ type: 'enum', enum: Role, default: Role.USER })
   role: Role;
-  @OneToMany(() => Account, (account) => account.user)
-  accounts: Account[];
+  @OneToMany(() => Account, (account) => account.owner)
+  ownedAccounts?: Account[];
+
+  @ManyToMany(() => Account, (account) => account.users)
+  sharedAccounts?: Account[];
   @DeleteDateColumn()
   deletedAt: Date;
 }
