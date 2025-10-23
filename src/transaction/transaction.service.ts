@@ -83,7 +83,20 @@ export class TransactionService {
       updatedAccountBalance: card.account.balance,
     };
   }
-
+  async findAllForUser(userId: number) {
+        return this.transactionRepository.createQueryBuilder('transaction')
+           
+            .innerJoin('transaction.card', 'card') 
+           
+            .innerJoin('card.account', 'account') 
+            
+            .where('account.user.id = :userId', { userId }) 
+            
+            
+            .leftJoinAndSelect('transaction.card', 'card_alias')
+            .leftJoinAndSelect('card_alias.account', 'account_alias')
+            .getMany();
+    }
   async findAll() {
     return this.transactionRepository.find({
       relations: ['card', 'card.account'],
