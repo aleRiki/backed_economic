@@ -5,9 +5,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Account } from './entities/account.entity';
 import { UsersModule } from 'src/users/users.module';
 import { BankModule } from 'src/bank/bank.module';
+import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Account]), UsersModule, BankModule],
+  imports: [TypeOrmModule.forFeature([Account]), UsersModule, BankModule, AuthModule],
   controllers: [AccountsController],
   providers: [AccountsService],
   exports: [TypeOrmModule]

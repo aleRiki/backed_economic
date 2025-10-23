@@ -1,67 +1,67 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreateAccountDto } from './dto/create-account.dto';
-import { UpdateAccountDto } from './dto/update-account.dto';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Account } from './entities/account.entity';
 import { Repository } from 'typeorm';
+import { Account } from './entities/account.entity';
 import { User } from 'src/users/entities/user.entity';
 import { Bank } from 'src/bank/entities/bank.entity';
+import { CreateAccountDto } from './dto/create-account.dto';
+import { UpdateAccountDto } from './dto/update-account.dto';
 
 @Injectable()
 export class AccountsService {
   constructor(
-    @InjectRepository(Account) private accountsRepository: Repository<Account>,
-    @InjectRepository(User) private usersRepository: Repository<User>,
-    @InjectRepository(Bank) private bankRepository: Repository<Bank>,
+    @InjectRepository(Account) private readonly accountsRepository: Repository<Account>,
+    @InjectRepository(User) private readonly usersRepository: Repository<User>,
+    @InjectRepository(Bank) private readonly bankRepository: Repository<Bank>,
   ) {}
-  async create(createAccountDto: CreateAccountDto) {
-    // 1. Buscar por ID
-    const bank = await this.bankRepository.findOneBy({
-      id: createAccountDto.bankId, // Usar bankId
-    });
-    const user = await this.usersRepository.findOneBy({
-      id: createAccountDto.userId, // Usar userId
-    });
 
-    // 2. Manejo de Errores (usando NotFoundException como se sugirió)
-    if (!bank) {
-      throw new NotFoundException(
-        `Bank with ID '${createAccountDto.bankId}' not found.`,
-      );
-    }
-    if (!user) {
-      throw new NotFoundException(
-        `User with ID '${createAccountDto.userId}' not found.`,
-      );
-    }
+  async create(createAccountDto: CreateAccountDto, userId: number) {
+    const user = await this.usersRepository.findOneBy({ id: userId });
+    if (!user) throw new NotFoundException('User not found.');
 
-    
+    const bank = await this.bankRepository.findOneBy({ id: createAccountDto.bankId });
+    if (!bank) throw new NotFoundException('Bank not found.');
+
     const account = this.accountsRepository.create({
-      
       name: createAccountDto.name,
       type: createAccountDto.type,
       balance: createAccountDto.balance,
-    
-      bank: bank,
-      user: user,
+      user,
+      bank,
     });
 
-    return await this.accountsRepository.save(account);
+    return this.accountsRepository.save(account);
   }
 
-  findAll() {
-    return this.accountsRepository.find();
+  async findByUser(userId: number) {
+    return this.accountsRepository.find({
+      where: { user: { id: userId } },
+      relations: ['bank'],
+      order: { createAt: 'DESC' },
+      select: ['id', 'name', 'type', 'balance', 'createAt'],
+    });
   }
 
-  findOne(id: number) {
-    return this.accountsRepository.findOneBy({ id });
+  async findOneForUser(id: number, userId: number) {
+    const account = await this.accountsRepository.findOne({
+      where: { id },
+      relations: ['user', 'bank'],
+    });
+
+    if (!account) throw new NotFoundException('Account not found.');
+    if (account.user.id !== userId) throw new ForbiddenException('No access to this account.');
+
+    return account;
   }
 
-  update(id: number, updateAccountDto: UpdateAccountDto) {
-    return this.accountsRepository.update(id, updateAccountDto);
+  async updateForUser(id: number, dto: UpdateAccountDto, userId: number) {
+    const account = await this.findOneForUser(id, userId);
+    Object.assign(account, dto);
+    return this.accountsRepository.save(account);
   }
 
-  remove(id: number) {
-    return this.accountsRepository.softDelete(id);
+  async removeForUser(id: number, userId: number) {
+    const account = await this.findOneForUser(id, userId);
+    return this.accountsRepository.softRemove(account);
   }
 }
