@@ -55,6 +55,7 @@ export class CardService {
         'card.balance',
         'account.id',
         'account.name',
+        'account.type',
         'account.typeAccount',
       ])
       .orderBy('card.id', 'DESC')
