@@ -10,6 +10,9 @@ import { Card } from 'src/card/entities/card.entity';
 import { Account } from 'src/accounts/entities/account.entity';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
+// 🚨 Importar el enum para estandarizar los tipos de transacción
+import { TransactionType } from './enum/transaction-type.enum'; 
+// NOTA: Debes crear este archivo en './enums/transaction-type.enum.ts'
 
 @Injectable()
 export class TransactionService {
@@ -22,53 +25,65 @@ export class TransactionService {
     private accountRepository: Repository<Account>,
   ) {}
 
-  async create(createTransactionDto: CreateTransactionDto) {
-    const { transactionType, amount, description, cardId } =
-      createTransactionDto; // 🔍 Buscar la tarjeta con su cuenta asociada
+  /**
+   * Crea una nueva transacción (depósito o retiro) y actualiza los balances de la tarjeta y la cuenta.
+   * La lógica para el retiro ('withdraw') y el depósito ('deposit') es manejada.
+   */
+async create(createTransactionDto: CreateTransactionDto) {
+    // 1. Desestructurar DTO
+    // ✅ CORRECCIÓN: Incluir 'category' en la desestructuración
+    const { transactionType, category, amount, description, cardId } = createTransactionDto;
 
+    // 2. Buscar la tarjeta y su cuenta asociada
     const card = await this.cardRepository.findOne({
       where: { id: cardId },
       relations: ['account'],
     });
 
-    if (!card) {
-      throw new NotFoundException(`Card with ID ${cardId} not found.`);
+    if (!card || !card.account) {
+      throw new NotFoundException(`Card or linked account not found for ID ${cardId}.`);
     }
 
-    if (!card.account) {
-      throw new NotFoundException(`Card ${cardId} has no linked account.`);
-    } // 🔢 Convertir monto a número
-
+    // 3. Preparar montos y balances
     const numericAmount = Number(amount);
+    
+    // MEJORA DE PRECISIÓN: Convertir a números y usar toFixed(2) al guardar.
     let newCardBalance = Number(card.balance);
-    let newAccountBalance = Number(card.account.balance); // 💸 Actualizar balances según el tipo de transacción
+    let newAccountBalance = Number(card.account.balance);
 
-    if (transactionType === 'deposit') {
+    // 4. Actualizar balances según el tipo de transacción
+    if (transactionType === TransactionType.DEPOSIT) {
       newCardBalance += numericAmount;
       newAccountBalance += numericAmount;
-    } else if (transactionType === 'withdraw') {
+    } else if (transactionType === TransactionType.WITHDRAW) {
       if (numericAmount > newCardBalance) {
         throw new BadRequestException('Insufficient funds on the card.');
       }
+      // Lógica de retiro: resta el monto del balance de la tarjeta y la cuenta
       newCardBalance -= numericAmount;
       newAccountBalance -= numericAmount;
     } else {
       throw new BadRequestException('Invalid transaction type.');
-    } // 🧾 Guardar la transacción
+    }
 
+    // 5. Guardar la nueva transacción
     const transaction = this.transactionRepository.create({
       transactionType,
+      // ✅ CORRECCIÓN: Incluir 'category' aquí para que se guarde el valor correcto
+      category, 
       amount: numericAmount,
       description,
       card,
     });
+    await this.transactionRepository.save(transaction);
 
-    await this.transactionRepository.save(transaction); // 💳 Actualizar balance de la tarjeta
+    // 6. Actualizar y guardar balance de la tarjeta
+    // Usamos parseFloat(toFixed(2)) para mitigar problemas de coma flotante
+    card.balance = parseFloat(newCardBalance.toFixed(2));
+    await this.cardRepository.save(card);
 
-    card.balance = newCardBalance;
-    await this.cardRepository.save(card); // 🏦 Actualizar balance de la cuenta vinculada
-
-    card.account.balance = newAccountBalance;
+    // 7. Actualizar y guardar balance de la cuenta vinculada
+    card.account.balance = parseFloat(newAccountBalance.toFixed(2));
     await this.accountRepository.save(card.account);
 
     return {
@@ -77,30 +92,28 @@ export class TransactionService {
       updatedCardBalance: card.balance,
       updatedAccountBalance: card.account.balance,
     };
-  }
+}
+  // --------------------------------------------------------------------------------------------------
+  // Métodos de Consulta
+  // --------------------------------------------------------------------------------------------------
 
-  // --------------------------------------------------------------------------------------------------
-  // CORRECCIÓN: Añadir el JOIN a la tabla de Usuario (asumimos que la relación es 'owner' en Account)
-  // --------------------------------------------------------------------------------------------------
+  /**
+   * Busca todas las transacciones asociadas a un usuario específico a través de la relación Tarjeta -> Cuenta.
+   */
   async findAllForUser(userId: number) {
+    // Asumimos que la relación del usuario en Account se llama 'owner' o 'user'.
     return (
       this.transactionRepository
-        .createQueryBuilder('transaction') // 1. Unir Transacción a Tarjeta
-        .innerJoin('transaction.card', 'card') // 2. Unir Tarjeta a Cuenta
+        .createQueryBuilder('transaction')
+        .innerJoin('transaction.card', 'card')
         .innerJoin('card.account', 'account')
-
-        // 3. 🚨 CORRECCIÓN: Unir Cuenta a Usuario (asumiendo que la relación en Account se llama 'owner')
-        .innerJoin('account.owner', 'user') // 4. Filtrar por el ID del usuario (usando el alias 'user')
-        .where('user.id = :userId', { userId }) // 5. Seleccionar las relaciones necesarias para el DTO de respuesta
+        .innerJoin('account.owner', 'user') // 🚨 Usamos 'owner' o 'user' según tu entidad Account
+        .where('user.id = :userId', { userId })
         .leftJoinAndSelect('transaction.card', 'card_alias')
         .leftJoinAndSelect('card_alias.account', 'account_alias')
         .getMany()
     );
   }
-  // --------------------------------------------------------------------------------------------------
-  // NOTA: Si la relación en tu entidad Account NO se llama 'owner', sino 'user', usa:
-  // .innerJoin('account.user', 'user')
-  // --------------------------------------------------------------------------------------------------
 
   async findAll() {
     return this.transactionRepository.find({
@@ -119,7 +132,12 @@ export class TransactionService {
     return transaction;
   }
 
+  // --------------------------------------------------------------------------------------------------
+  // Métodos CRUD básicos restantes
+  // --------------------------------------------------------------------------------------------------
+
   async update(id: number, updateTransactionDto: UpdateTransactionDto) {
+    // Implementar lógica de reversión de balance y nueva aplicación aquí si fuera necesario
     return `This action updates transaction #${id}`;
   }
 

@@ -1,10 +1,18 @@
-import { IsNumber, IsString, IsNotEmpty } from 'class-validator';
+import { IsNumber, IsString, IsNotEmpty, IsIn } from 'class-validator';
+import { TransactionType } from '../enum/transaction-type.enum';
+import { TransactionCategory } from '../enum/transaction-category.enum';
+import { Transform } from 'class-transformer';
 
 export class CreateTransactionDto {
   @IsString()
   @IsNotEmpty()
-  transactionType: string; // "deposit" o "withdraw"
-
+  @IsIn([TransactionType.DEPOSIT, TransactionType.WITHDRAW])
+  @Transform(({ value }) => String(value).toLowerCase())
+  transactionType: TransactionType; 
+  @IsString()
+  @IsNotEmpty()
+  @IsIn(Object.values(TransactionCategory)) 
+  category: TransactionCategory;
   @IsNumber()
   amount: number;
 
@@ -13,5 +21,5 @@ export class CreateTransactionDto {
   description: string;
 
   @IsNumber()
-  cardId: number; // ID de la tarjeta asociada
+  cardId: number;
 }
