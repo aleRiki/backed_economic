@@ -8,11 +8,15 @@ import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { TransactionModule } from './transaction/transaction.module';
 import { TascambModule } from './tascamb/tascamb.module';
+
+import { PagoController } from './pago/pago.controller';
+import { PagoModule } from './pago/pago.module';
 @Module({
   imports: [
     UsersModule,
     AccountsModule,
     BankModule,
+    PagoModule,
     CardModule,
     ConfigModule.forRoot({
       isGlobal: true,
@@ -25,14 +29,16 @@ import { TascambModule } from './tascamb/tascamb.module';
       password: process.env.POSTGRES_PASSWORD,
       database: process.env.POSTGRES_DB,
       autoLoadEntities: true,
-      synchronize: true,
-      ssl: process.env.POSTGRES_SSL === 'true',
+      synchronize: true, // solo en desarrollo
+      ssl:
+        process.env.POSTGRES_SSL === 'true'
+          ? { rejectUnauthorized: false }
+          : false,
     }),
     AuthModule,
+
     TransactionModule,
     TascambModule,
   ],
-  controllers: [],
-  providers: [],
 })
 export class AppModule {}
