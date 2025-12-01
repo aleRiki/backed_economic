@@ -1,5 +1,6 @@
 import { Account } from 'src/accounts/entities/account.entity';
 import { Role } from 'src/auth/enums/role.enum';
+import { Taskt } from 'src/taskt/entities/taskt.entity';
 import {
   Column,
   DeleteDateColumn,
@@ -26,6 +27,8 @@ export class User {
 
   @ManyToMany(() => Account, (account) => account.users)
   sharedAccounts?: Account[];
+  @ManyToMany(() => Taskt, (task) => task.users)
+  tasks: Taskt[];
   @DeleteDateColumn()
   deletedAt: Date;
 }

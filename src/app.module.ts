@@ -11,6 +11,7 @@ import { TascambModule } from './tascamb/tascamb.module';
 
 import { PagoController } from './pago/pago.controller';
 import { PagoModule } from './pago/pago.module';
+import { TasktModule } from './taskt/taskt.module';
 @Module({
   imports: [
     UsersModule,
@@ -39,6 +40,7 @@ import { PagoModule } from './pago/pago.module';
 
     TransactionModule,
     TascambModule,
+    TasktModule,
   ],
 })
 export class AppModule {}
