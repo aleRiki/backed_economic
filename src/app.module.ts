@@ -12,6 +12,9 @@ import { TascambModule } from './tascamb/tascamb.module';
 import { PagoController } from './pago/pago.controller';
 import { PagoModule } from './pago/pago.module';
 import { TasktModule } from './taskt/taskt.module';
+import { BudgetModule } from './budget/budget.module';
+import { MetasModule } from './metas/metas.module';
+import { PresupuestoModule } from './presupuesto/presupuesto.module';
 @Module({
   imports: [
     UsersModule,
@@ -41,6 +44,9 @@ import { TasktModule } from './taskt/taskt.module';
     TransactionModule,
     TascambModule,
     TasktModule,
+    BudgetModule,
+    MetasModule,
+    PresupuestoModule,
   ],
 })
 export class AppModule {}
