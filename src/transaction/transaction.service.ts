@@ -4,15 +4,14 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Transaction } from './entities/transaction.entity';
 import { Card } from 'src/card/entities/card.entity';
 import { Account } from 'src/accounts/entities/account.entity';
+import { User } from 'src/users/entities/user.entity';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
-// 🚨 Importar el enum para estandarizar los tipos de transacción
-import { TransactionType } from './enum/transaction-type.enum'; 
-// NOTA: Debes crear este archivo en './enums/transaction-type.enum.ts'
+import { TransactionType } from './enum/transaction-type.enum';
 
 @Injectable()
 export class TransactionService {
@@ -32,7 +31,7 @@ export class TransactionService {
 async create(createTransactionDto: CreateTransactionDto) {
     // 1. Desestructurar DTO
     // ✅ CORRECCIÓN: Incluir 'category' en la desestructuración
-    const { transactionType, category, amount, description, cardId } = createTransactionDto;
+    const { transactionType, category, amount, description, cardId, skipBalanceCheck } = createTransactionDto;
 
     // 2. Buscar la tarjeta y su cuenta asociada
     const card = await this.cardRepository.findOne({
@@ -56,7 +55,7 @@ async create(createTransactionDto: CreateTransactionDto) {
       newCardBalance += numericAmount;
       newAccountBalance += numericAmount;
     } else if (transactionType === TransactionType.WITHDRAW) {
-      if (numericAmount > newCardBalance) {
+      if (!skipBalanceCheck && numericAmount > newCardBalance) {
         throw new BadRequestException('Insufficient funds on the card.');
       }
       // Lógica de retiro: resta el monto del balance de la tarjeta y la cuenta
@@ -101,18 +100,27 @@ async create(createTransactionDto: CreateTransactionDto) {
    * Busca todas las transacciones asociadas a un usuario específico a través de la relación Tarjeta -> Cuenta.
    */
   async findAllForUser(userId: number) {
-    // Asumimos que la relación del usuario en Account se llama 'owner' o 'user'.
-    return (
-      this.transactionRepository
-        .createQueryBuilder('transaction')
-        .innerJoin('transaction.card', 'card')
-        .innerJoin('card.account', 'account')
-        .innerJoin('account.owner', 'user') // 🚨 Usamos 'owner' o 'user' según tu entidad Account
-        .where('user.id = :userId', { userId })
-        .leftJoinAndSelect('transaction.card', 'card_alias')
-        .leftJoinAndSelect('card_alias.account', 'account_alias')
-        .getMany()
-    );
+    const accounts = await this.accountRepository.find({
+      where: [
+        { owner: { id: userId } },
+        { users: { id: userId } },
+      ],
+    });
+    const accountIds = accounts.map(a => a.id);
+    if (accountIds.length === 0) return [];
+
+    const cards = await this.cardRepository.find({
+      where: { account: { id: In(accountIds) } },
+    });
+    const cardIds = cards.map(c => c.id);
+    if (cardIds.length === 0) return [];
+
+    return this.transactionRepository.find({
+      where: { card: { id: In(cardIds) } },
+      relations: ['card', 'card.account'],
+      order: { createAt: 'DESC' },
+      take: 50,
+    });
   }
 
   async findAll() {

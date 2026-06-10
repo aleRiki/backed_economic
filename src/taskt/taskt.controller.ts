@@ -6,18 +6,23 @@ import {
   Patch,
   Param,
   Delete,
-  UseGuards,
 } from '@nestjs/common';
 import { TasktService } from './taskt.service';
 import { CreateTasktDto } from './dto/create-taskt.dto';
 import { UpdateTasktDto } from './dto/update-taskt.dto';
 import { ActiveUser } from 'src/common/active-user/active-user.decorator';
-//import { JwtAuthGuard } from ;
-  import { Auth } from 'src/auth/decorators/auth.decorators';
+import { Auth } from 'src/auth/decorators/auth.decorators';
 import { Role } from 'src/auth/enums/role.enum';
+import { IsOptional, IsNumber } from 'class-validator';
+
+class CompleteTaskDto {
+  @IsOptional()
+  @IsNumber()
+  amount?: number;
+}
 
 @Controller('taskt')
-@Auth(Role.USER) // protege todas las rutas
+@Auth(Role.USER)
 export class TasktController {
   constructor(private readonly tasktService: TasktService) {}
 
@@ -42,8 +47,12 @@ export class TasktController {
   }
 
   @Patch(':id/completed')
-  complete(@Param('id') id: string, @ActiveUser() user: any) {
-    return this.tasktService.markAsCompleted(+id, user.id);
+  complete(
+    @Param('id') id: string,
+    @Body() dto: CompleteTaskDto,
+    @ActiveUser() user: any,
+  ) {
+    return this.tasktService.markAsCompleted(+id, user.id, dto.amount);
   }
 
   @Delete(':id')

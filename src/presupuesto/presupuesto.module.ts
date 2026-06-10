@@ -7,11 +7,13 @@ import { Presupuesto } from './entities/presupuesto.entity';
 import { User } from 'src/users/entities/user.entity';
 import { Card } from 'src/card/entities/card.entity';
 import { AuthModule } from 'src/auth/auth.module';
+import { TransactionModule } from 'src/transaction/transaction.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Meta, Presupuesto, User, Card]),
     forwardRef(() => AuthModule),
+    TransactionModule,
   ],
   controllers: [PresupuestoController],
   providers: [PresupuestoService],

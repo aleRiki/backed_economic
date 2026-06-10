@@ -15,6 +15,7 @@ import { TasktModule } from './taskt/taskt.module';
 import { BudgetModule } from './budget/budget.module';
 import { MetasModule } from './metas/metas.module';
 import { PresupuestoModule } from './presupuesto/presupuesto.module';
+import { TaskTypeModule } from './task-type/task-type.module';
 @Module({
   imports: [
     UsersModule,
@@ -47,6 +48,7 @@ import { PresupuestoModule } from './presupuesto/presupuesto.module';
     BudgetModule,
     MetasModule,
     PresupuestoModule,
+    TaskTypeModule,
   ],
 })
 export class AppModule {}

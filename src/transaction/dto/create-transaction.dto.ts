@@ -1,4 +1,4 @@
-import { IsNumber, IsString, IsNotEmpty, IsIn } from 'class-validator';
+import { IsNumber, IsString, IsNotEmpty, IsIn, IsOptional, IsBoolean } from 'class-validator';
 import { TransactionType } from '../enum/transaction-type.enum';
 import { TransactionCategory } from '../enum/transaction-category.enum';
 import { Transform } from 'class-transformer';
@@ -22,4 +22,8 @@ export class CreateTransactionDto {
 
   @IsNumber()
   cardId: number;
+
+  @IsOptional()
+  @IsBoolean()
+  skipBalanceCheck?: boolean;
 }

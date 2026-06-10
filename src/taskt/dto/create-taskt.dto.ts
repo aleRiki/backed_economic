@@ -1,17 +1,33 @@
-import { IsBoolean, IsOptional, IsString, IsArray, IsNumber } from "class-validator";
+import {
+  IsBoolean,
+  IsOptional,
+  IsString,
+  IsArray,
+  IsNumber,
+  IsNotEmpty,
+} from 'class-validator';
 
 export class CreateTasktDto {
   @IsString()
   title: string;
 
   @IsString()
+  @IsOptional()
   description: string;
 
   @IsBoolean()
-  isCompleted: boolean;
+  @IsOptional()
+  isCompleted?: boolean;
+
+  @IsString()
+  @IsNotEmpty()
+  type: string;
+
+  @IsNumber()
+  presupuestoId: number;
 
   @IsOptional()
   @IsArray()
   @IsNumber({}, { each: true })
-  userIds?: number[]; 
+  userIds?: number[];
 }
